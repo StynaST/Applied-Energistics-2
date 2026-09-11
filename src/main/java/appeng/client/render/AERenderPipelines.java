@@ -23,7 +23,7 @@ public final class AERenderPipelines {
      */
     public static final RenderPipeline LINES_BEHIND_BLOCK = RenderPipelines.LINES.toBuilder()
             .withLocation(AppEng.makeId("pipeline/lines_behind_block"))
-            .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN, false))
+            .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN, false))
             .build();
 
     public static final RenderPipeline SPATIAL_SKYBOX = RenderPipeline
@@ -33,7 +33,7 @@ public final class AERenderPipelines {
             .withVertexShader("core/position_color")
             .withFragmentShader("core/position_color")
             .withColorTargetState(ColorTargetState.DEFAULT)
-            .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false))
+            .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, false))
             .withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR)
             .withPrimitiveTopology(PrimitiveTopology.QUADS)
             .build();
@@ -45,7 +45,7 @@ public final class AERenderPipelines {
             .withVertexShader("core/position_color")
             .withFragmentShader("core/position_color")
             .withColorTargetState(new ColorTargetState(BlendFunction.ADDITIVE))
-            .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false))
+            .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, false))
             .withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR)
             .withPrimitiveTopology(PrimitiveTopology.QUADS)
             .build();
@@ -57,7 +57,7 @@ public final class AERenderPipelines {
             .withVertexShader("core/position_color")
             .withFragmentShader("core/position_color")
             .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-            .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false))
+            .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, false))
             .withCull(false)
             .withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR_NORMAL)
             .withPrimitiveTopology(PrimitiveTopology.QUADS)
@@ -72,7 +72,7 @@ public final class AERenderPipelines {
     public static final RenderPipeline AREA_OVERLAY_LINE_OCCLUDED = RenderPipeline
             .builder(RenderPipelines.LINES_SNIPPET)
             .withLocation(AppEng.makeId("pipeline/area_overlay_line_occluded"))
-            .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN, false))
+            .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN, false))
             .build();
 
     public static final RenderPipeline STORAGE_CELL_LEDS = RenderPipeline

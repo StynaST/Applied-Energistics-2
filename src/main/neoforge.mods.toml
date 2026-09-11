@@ -1,6 +1,6 @@
 modLoader="javafml"
 loaderVersion="[1,)"
-logoFile="logo.png"
+iconFile="logo.png"
 license="See GitHub repository for details"
 issueTrackerURL="https://github.com/AppliedEnergistics/Applied-Energistics-2/issues"
 
