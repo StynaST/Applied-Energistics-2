@@ -27,8 +27,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 
 import org.joml.Matrix4f;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.util.context.ContextKey;
 import net.minecraft.world.level.ChunkPos;
@@ -36,7 +35,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.ExtractLevelRenderStateEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent;
 
 import appeng.client.render.AERenderTypes;
 import appeng.core.AppEng;
@@ -65,57 +64,47 @@ public class AreaOverlayRenderer {
     }
 
     @SubscribeEvent
-    public void renderWorldLastEvent(RenderLevelStageEvent.AfterWeather event) {
-        var visibleAreas = event.getLevelRenderState().getRenderDataOrDefault(OVERLAY_AREAS, List.of());
+    public void submitGeometry(SubmitCustomGeometryEvent event) {
+        var levelRenderState = event.getLevelRenderState();
+        var visibleAreas = levelRenderState.getRenderDataOrDefault(OVERLAY_AREAS, List.of());
 
         if (visibleAreas.isEmpty()) {
             return;
         }
 
-        Minecraft minecraft = Minecraft.getInstance();
-        MultiBufferSource.BufferSource buffer = minecraft.renderBuffers().bufferSource();
+        var nodes = event.getSubmitNodeCollector();
         PoseStack poseStack = event.getPoseStack();
 
         poseStack.pushPose();
 
-        Vec3 projectedView = minecraft.gameRenderer.getMainCamera().position();
+        Vec3 projectedView = levelRenderState.cameraRenderState.pos;
         poseStack.translate(-projectedView.x, -projectedView.y, -projectedView.z);
 
         for (var visibleArea : visibleAreas) {
-            render(visibleArea, poseStack, buffer);
+            render(visibleArea, poseStack, nodes);
         }
 
         poseStack.popPose();
-
-        buffer.endBatch(AERenderTypes.AREA_OVERLAY_LINE_OCCLUDED);
-        buffer.endBatch(AERenderTypes.AREA_OVERLAY_FACE);
-        buffer.endBatch(AERenderTypes.AREA_OVERLAY_LINE);
     }
 
-    public void render(IAreaOverlayDataSource area, PoseStack poseStack, MultiBufferSource buffer) {
+    public void render(IAreaOverlayDataSource area, PoseStack poseStack, SubmitNodeCollector nodes) {
         Level level = area.getOverlaySourceLocation().getLevel();
         Collection<ChunkPos> allChunks = area.getOverlayChunks();
 
-        RenderType typeLinesOccluded = AERenderTypes.AREA_OVERLAY_LINE_OCCLUDED;
-        render(level, allChunks, poseStack, buffer.getBuffer(typeLinesOccluded), true, 0x30ffffff);
-
-        RenderType typeFaces = AERenderTypes.AREA_OVERLAY_FACE;
-        render(level, allChunks, poseStack, buffer.getBuffer(typeFaces), false, area.getOverlayColor());
-
-        RenderType typeLines = AERenderTypes.AREA_OVERLAY_LINE;
-        render(level, allChunks, poseStack, buffer.getBuffer(typeLines), true, area.getOverlayColor());
+        render(level, allChunks, poseStack, nodes, AERenderTypes.AREA_OVERLAY_LINE_OCCLUDED, true, 0x30ffffff);
+        render(level, allChunks, poseStack, nodes, AERenderTypes.AREA_OVERLAY_FACE, false, area.getOverlayColor());
+        render(level, allChunks, poseStack, nodes, AERenderTypes.AREA_OVERLAY_LINE, true, area.getOverlayColor());
     }
 
-    private void render(Level level, Collection<ChunkPos> allChunks, PoseStack poseStack, VertexConsumer builder,
-            boolean renderLines, int color) {
+    private void render(Level level, Collection<ChunkPos> allChunks, PoseStack poseStack, SubmitNodeCollector nodes,
+            RenderType renderType, boolean renderLines, int color) {
         int[] cols = decomposeColor(color);
-        for (ChunkPos pos : allChunks) {
-            poseStack.pushPose();
-            poseStack.translate(pos.getMinBlockX(), 0, pos.getMinBlockZ());
-            Matrix4f posMat = poseStack.last().pose();
-            addVertices(level, allChunks, builder, posMat, pos, cols, renderLines);
-            poseStack.popPose();
-        }
+        nodes.submitCustomGeometry(poseStack, renderType, (pose, builder) -> {
+            for (ChunkPos pos : allChunks) {
+                var posMat = new Matrix4f(pose.pose()).translate(pos.getMinBlockX(), 0, pos.getMinBlockZ());
+                addVertices(level, allChunks, builder, posMat, pos, cols, renderLines);
+            }
+        });
     }
 
     private static int[] decomposeColor(int color) {

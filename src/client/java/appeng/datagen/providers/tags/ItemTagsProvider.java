@@ -44,6 +44,11 @@ import appeng.core.definitions.AEParts;
 import appeng.datagen.providers.IAE2DataProvider;
 
 public class ItemTagsProvider extends BlockTagCopyingItemTagProvider implements IAE2DataProvider {
+    @Override
+    protected IntrinsicTagAppender<net.minecraft.world.item.Item> tag(TagKey<net.minecraft.world.item.Item> tag) {
+        return new IntrinsicTagAppender<>(super.tag(tag), item -> item.builtInRegistryHolder().key());
+    }
+
     public ItemTagsProvider(PackOutput packOutput, CompletableFuture<HolderLookup.Provider> registries,
             CompletableFuture<TagLookup<Block>> blockTagsProvider) {
         super(packOutput, registries, blockTagsProvider, AppEng.MOD_ID);

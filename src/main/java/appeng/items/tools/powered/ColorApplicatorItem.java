@@ -108,22 +108,22 @@ public class ColorApplicatorItem extends AEBasePoweredItem
 
     // TODO (RID): Sorted the colours according to the colour wheel
     static {
-        VANILLA_DYES.put(DyeColor.WHITE, Items.WHITE_DYE);
-        VANILLA_DYES.put(DyeColor.LIGHT_GRAY, Items.LIGHT_GRAY_DYE);
-        VANILLA_DYES.put(DyeColor.GRAY, Items.GRAY_DYE);
-        VANILLA_DYES.put(DyeColor.BLACK, Items.BLACK_DYE);
-        VANILLA_DYES.put(DyeColor.LIME, Items.LIME_DYE);
-        VANILLA_DYES.put(DyeColor.YELLOW, Items.YELLOW_DYE);
-        VANILLA_DYES.put(DyeColor.ORANGE, Items.ORANGE_DYE);
-        VANILLA_DYES.put(DyeColor.BROWN, Items.BROWN_DYE);
-        VANILLA_DYES.put(DyeColor.RED, Items.RED_DYE);
-        VANILLA_DYES.put(DyeColor.PINK, Items.PINK_DYE);
-        VANILLA_DYES.put(DyeColor.MAGENTA, Items.MAGENTA_DYE);
-        VANILLA_DYES.put(DyeColor.PURPLE, Items.PURPLE_DYE);
-        VANILLA_DYES.put(DyeColor.BLUE, Items.BLUE_DYE);
-        VANILLA_DYES.put(DyeColor.LIGHT_BLUE, Items.LIGHT_BLUE_DYE);
-        VANILLA_DYES.put(DyeColor.CYAN, Items.CYAN_DYE);
-        VANILLA_DYES.put(DyeColor.GREEN, Items.GREEN_DYE);
+        VANILLA_DYES.put(DyeColor.WHITE, Items.DYE.pick(DyeColor.WHITE));
+        VANILLA_DYES.put(DyeColor.LIGHT_GRAY, Items.DYE.pick(DyeColor.LIGHT_GRAY));
+        VANILLA_DYES.put(DyeColor.GRAY, Items.DYE.pick(DyeColor.GRAY));
+        VANILLA_DYES.put(DyeColor.BLACK, Items.DYE.pick(DyeColor.BLACK));
+        VANILLA_DYES.put(DyeColor.LIME, Items.DYE.pick(DyeColor.LIME));
+        VANILLA_DYES.put(DyeColor.YELLOW, Items.DYE.pick(DyeColor.YELLOW));
+        VANILLA_DYES.put(DyeColor.ORANGE, Items.DYE.pick(DyeColor.ORANGE));
+        VANILLA_DYES.put(DyeColor.BROWN, Items.DYE.pick(DyeColor.BROWN));
+        VANILLA_DYES.put(DyeColor.RED, Items.DYE.pick(DyeColor.RED));
+        VANILLA_DYES.put(DyeColor.PINK, Items.DYE.pick(DyeColor.PINK));
+        VANILLA_DYES.put(DyeColor.MAGENTA, Items.DYE.pick(DyeColor.MAGENTA));
+        VANILLA_DYES.put(DyeColor.PURPLE, Items.DYE.pick(DyeColor.PURPLE));
+        VANILLA_DYES.put(DyeColor.BLUE, Items.DYE.pick(DyeColor.BLUE));
+        VANILLA_DYES.put(DyeColor.LIGHT_BLUE, Items.DYE.pick(DyeColor.LIGHT_BLUE));
+        VANILLA_DYES.put(DyeColor.CYAN, Items.DYE.pick(DyeColor.CYAN));
+        VANILLA_DYES.put(DyeColor.GREEN, Items.DYE.pick(DyeColor.GREEN));
     }
 
     public ColorApplicatorItem(Properties props) {

@@ -18,18 +18,18 @@
 
 package appeng.client.renderer.spatialstorage;
 
+import java.util.Optional;
 import java.util.OptionalDouble;
-import java.util.OptionalInt;
 
+import com.mojang.blaze3d.PrimitiveTopology;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
@@ -45,7 +45,6 @@ import net.minecraft.util.RandomSource;
 import net.neoforged.neoforge.client.CustomSkyboxRenderer;
 
 import appeng.client.render.AERenderPipelines;
-import appeng.client.render.AERenderTypes;
 
 public class SpatialStorageSkyRenderer implements CustomSkyboxRenderer, AutoCloseable {
 
@@ -55,6 +54,7 @@ public class SpatialStorageSkyRenderer implements CustomSkyboxRenderer, AutoClos
     private long cycle = 0;
     private GpuBuffer sparklesVertices;
     private int sparklesQuads;
+    private GpuBuffer skyboxVertices;
 
     private static final Quaternionf[] SKYBOX_SIDE_ROTATIONS = { new Quaternionf(),
             new Quaternionf().rotationX(Mth.DEG_TO_RAD * 90.0F),
@@ -65,25 +65,10 @@ public class SpatialStorageSkyRenderer implements CustomSkyboxRenderer, AutoClos
     @Override
     public boolean renderSky(LevelRenderState levelRenderState, SkyRenderState skyRenderState,
             Matrix4fc modelViewMatrix, Runnable setupFog) {
-        var poseStack = new PoseStack();
-        poseStack.mulPose(modelViewMatrix);
-
-        // This renders a skybox around the player at a far, fixed distance from them.
-        // The skybox is pitch black and untextured
-        for (Quaternionf rotation : SKYBOX_SIDE_ROTATIONS) {
-            poseStack.pushPose();
-            poseStack.mulPose(rotation);
-
-            // This is very similar to how the End sky is rendered, just untextured
-            Matrix4f matrix4f = poseStack.last().pose();
-            var builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-            builder.addVertex(matrix4f, -100.0f, -100.0f, -100.0f).setColor(0f, 0f, 0f, 1f);
-            builder.addVertex(matrix4f, -100.0f, -100.0f, 100.0f).setColor(0f, 0f, 0f, 1f);
-            builder.addVertex(matrix4f, 100.0f, -100.0f, 100.0f).setColor(0f, 0f, 0f, 1f);
-            builder.addVertex(matrix4f, 100.0f, -100.0f, -100.0f).setColor(0f, 0f, 0f, 1f);
-            AERenderTypes.SPATIAL_SKYBOX.draw(builder.buildOrThrow());
-            poseStack.popPose();
+        if (skyboxVertices == null) {
+            buildSkybox();
         }
+        renderSkybox(modelViewMatrix);
 
         // Cycle the sparkles between 0 and 0.25 color value over 2 seconds
         final long now = System.currentTimeMillis();
@@ -103,24 +88,71 @@ public class SpatialStorageSkyRenderer implements CustomSkyboxRenderer, AutoClos
 
     private void renderSparkles(GpuBuffer sparklesVertices, Matrix4fc modelViewMatrix, float fade) {
         GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms()
-                .writeTransform(modelViewMatrix, new Vector4f(fade, fade, fade, 1.0F), new Vector3f(), new Matrix4f());
+                .writeTransform(new Matrix4f(modelViewMatrix), new Vector4f(fade, fade, fade, 1.0F), new Vector3f(),
+                        new Matrix4f());
 
-        var renderTarget = Minecraft.getInstance().getMainRenderTarget();
+        drawQuads("spatial sky sparkles", AERenderPipelines.SPATIAL_SKYBOX_SPARKLES, dynamicTransforms,
+                sparklesVertices, sparklesQuads);
+    }
+
+    private void renderSkybox(Matrix4fc modelViewMatrix) {
+        GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms()
+                .writeTransform(new Matrix4f(modelViewMatrix), new Vector4f(1f, 1f, 1f, 1f), new Vector3f(),
+                        new Matrix4f());
+
+        drawQuads("spatial skybox", AERenderPipelines.SPATIAL_SKYBOX, dynamicTransforms, skyboxVertices,
+                SKYBOX_SIDE_ROTATIONS.length);
+    }
+
+    private static void drawQuads(String label, RenderPipeline pipeline, GpuBufferSlice dynamicTransforms,
+            GpuBuffer vertices, int quadCount) {
+        var renderTarget = Minecraft.getInstance().gameRenderer.mainRenderTarget();
         var colorBuffer = renderTarget.getColorTextureView();
         var depthBuffer = renderTarget.getDepthTextureView();
-        var autoIndexBuffer = RenderSystem.getSequentialBuffer(VertexFormat.Mode.QUADS);
-        var indexBuffer = autoIndexBuffer.getBuffer(sparklesQuads * 4);
+        var autoIndexBuffer = RenderSystem.getSequentialBuffer(PrimitiveTopology.QUADS);
+        var indexCount = quadCount * 6;
+        var indexBuffer = autoIndexBuffer.getBuffer(indexCount);
 
         try (var pass = RenderSystem.getDevice()
                 .createCommandEncoder()
-                .createRenderPass(() -> "spatial sky", colorBuffer, OptionalInt.empty(), depthBuffer,
+                .createRenderPass(() -> label, colorBuffer, Optional.empty(), depthBuffer,
                         OptionalDouble.empty())) {
             RenderSystem.bindDefaultUniforms(pass);
             pass.setUniform("DynamicTransforms", dynamicTransforms);
-            pass.setPipeline(AERenderPipelines.SPATIAL_SKYBOX_SPARKLES);
-            pass.setVertexBuffer(0, sparklesVertices);
+            pass.setPipeline(pipeline);
+            pass.setVertexBuffer(0, vertices.slice());
             pass.setIndexBuffer(indexBuffer, autoIndexBuffer.type());
-            pass.drawIndexed(0, 0, sparklesQuads * 4, 1);
+            pass.drawIndexed(indexCount, 1, 0, 0, 0);
+        }
+    }
+
+    /**
+     * Bakes the six pitch black, untextured skybox faces into a static vertex buffer.
+     */
+    private void buildSkybox() {
+        try (var bytebufferbuilder = new ByteBufferBuilder(
+                SKYBOX_SIDE_ROTATIONS.length * 4 * DefaultVertexFormat.POSITION_COLOR.getVertexSize())) {
+            var vb = new BufferBuilder(bytebufferbuilder, PrimitiveTopology.QUADS, DefaultVertexFormat.POSITION_COLOR);
+
+            var poseStack = new PoseStack();
+            for (Quaternionf rotation : SKYBOX_SIDE_ROTATIONS) {
+                poseStack.pushPose();
+                poseStack.mulPose(rotation);
+
+                Matrix4f pose = poseStack.last().pose();
+                vb.addVertex(pose, -100.0f, -100.0f, -100.0f).setColor(0f, 0f, 0f, 1f);
+                vb.addVertex(pose, -100.0f, -100.0f, 100.0f).setColor(0f, 0f, 0f, 1f);
+                vb.addVertex(pose, 100.0f, -100.0f, 100.0f).setColor(0f, 0f, 0f, 1f);
+                vb.addVertex(pose, 100.0f, -100.0f, -100.0f).setColor(0f, 0f, 0f, 1f);
+
+                poseStack.popPose();
+            }
+
+            try (var meshdata = vb.buildOrThrow()) {
+                skyboxVertices = RenderSystem.getDevice()
+                        .createBuffer(() -> "Spatial skybox vertex buffer", GpuBuffer.USAGE_VERTEX,
+                                meshdata.vertexBuffer());
+            }
         }
     }
 
@@ -132,7 +164,7 @@ public class SpatialStorageSkyRenderer implements CustomSkyboxRenderer, AutoClos
 
         try (var bytebufferbuilder = new ByteBufferBuilder(
                 MAX_SPARKLE_QUADS * 4 * DefaultVertexFormat.POSITION_COLOR.getVertexSize())) {
-            var vb = new BufferBuilder(bytebufferbuilder, VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+            var vb = new BufferBuilder(bytebufferbuilder, PrimitiveTopology.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
             for (int i = 0; i < MAX_SPARKLE_QUADS; ++i) {
                 float iX = this.random.nextFloat() * 2.0f - 1.0f;
@@ -188,6 +220,10 @@ public class SpatialStorageSkyRenderer implements CustomSkyboxRenderer, AutoClos
         if (sparklesVertices != null) {
             sparklesVertices.close();
             sparklesVertices = null;
+        }
+        if (skyboxVertices != null) {
+            skyboxVertices.close();
+            skyboxVertices = null;
         }
     }
 }
