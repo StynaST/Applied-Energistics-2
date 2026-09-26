@@ -325,6 +325,9 @@ public class PatternProviderLogic implements InternalInventoryHost, ICraftingPro
 
             var craftingMachine = ICraftingMachine.of(level, adjPos, adjBeSide);
             if (craftingMachine != null && craftingMachine.acceptsPlans()) {
+                if (this.isBlocking() && craftingMachine.containsPatternInput(this.patternInputs)) {
+                    continue;
+                }
                 if (craftingMachine.pushPattern(patternDetails, inputHolder, adjBeSide)) {
                     onPushPatternSuccess(patternDetails);
                     return true;

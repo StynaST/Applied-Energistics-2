@@ -66,6 +66,20 @@ dependencyResolutionManagement {
                 includeGroup 'mezz.jei'
             }
         }
+        maven {
+            name = 'Warfactory Snapshots'
+            url = 'https://repo.warfactory.co/snapshots'
+            content {
+                includeModule('com.hbm', 'ntm-next-neoforge')
+            }
+        }
+        maven {
+            name = 'Warfactory'
+            url = 'https://repo.warfactory.co/releases'
+            content {
+                includeGroup 'dev.engine_room'
+            }
+        }
         mavenLocal() {
             content {
                 includeModule('org.appliedenergistics', 'guideme')

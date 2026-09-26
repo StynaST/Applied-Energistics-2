@@ -87,6 +87,7 @@ dependencies {
     compileOnly "me.shedaniel:RoughlyEnoughItems-neoforge:${project.rei_version}"
     compileOnly "mcp.mobius.waila:wthit-api:neo-${project.wthit_version}"
     compileOnly "curse.maven:jade-324717:${project.jade_file_id}"
+    compileOnly "com.hbm:ntm-next-neoforge:${project.ntm_next_version}"
     clientCompileOnly "mezz.jei:jei-${project.jei_minecraft_version}-neoforge-api:${project.jei_version}"
 
     switch (project.runtime_itemlist_mod) {
@@ -112,6 +113,11 @@ dependencies {
 
     if (project.runtime_curio == "true") {
         localRuntimeOnly("top.theillusivec4.curios:curios-neoforge:${project.curios_version}")
+    }
+
+    if (project.runtime_ntm == "true") {
+        localRuntimeOnly("com.hbm:ntm-next-neoforge:${project.ntm_next_version}")
+        localRuntimeOnly("dev.engine_room:crankshaft-neoforge:${project.crankshaft_version}")
     }
 
     // Athena

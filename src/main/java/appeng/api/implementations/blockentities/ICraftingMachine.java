@@ -23,6 +23,8 @@
 
 package appeng.api.implementations.blockentities;
 
+import java.util.Set;
+
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
@@ -32,6 +34,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 
 import appeng.api.AECapabilities;
 import appeng.api.crafting.IPatternDetails;
+import appeng.api.stacks.AEKey;
 import appeng.api.stacks.KeyCounter;
 
 /**
@@ -77,4 +80,15 @@ public interface ICraftingMachine {
      * @return true, if pushPattern can complete, if its false push will always be false.
      */
     boolean acceptsPlans();
+
+    /**
+     * Pattern providers in blocking mode will not push to this machine while this returns true. Machines that manage
+     * their own capacity, such as the molecular assembler, can leave this as-is to ignore blocking mode.
+     *
+     * @param patternInputs The inputs of all patterns in the pattern provider, with secondary components dropped.
+     * @return true, if the machine still holds any of the given inputs.
+     */
+    default boolean containsPatternInput(Set<AEKey> patternInputs) {
+        return false;
+    }
 }

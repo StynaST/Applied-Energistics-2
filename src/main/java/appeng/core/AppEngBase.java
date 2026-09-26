@@ -42,6 +42,7 @@ import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
@@ -88,6 +89,7 @@ import appeng.init.internal.InitStorageCells;
 import appeng.init.internal.InitUpgrades;
 import appeng.init.worldgen.InitStructures;
 import appeng.integration.Integrations;
+import appeng.integration.modules.ntm.NtmIntegration;
 import appeng.recipes.AERecipeSerializers;
 import appeng.recipes.AERecipeTypes;
 import appeng.server.AECommand;
@@ -147,6 +149,9 @@ public abstract class AppEngBase implements AppEng {
         modEventBus.addListener(EventPriority.HIGH, InitCapabilityProviders::markProxyableCapabilities);
         modEventBus.addListener(InitCapabilityProviders::register);
         modEventBus.addListener(EventPriority.LOWEST, InitCapabilityProviders::registerGenericAdapters);
+        if (ModList.get().isLoaded(NtmIntegration.MOD_ID)) {
+            modEventBus.addListener(NtmIntegration::registerCapabilities);
+        }
         modEventBus.addListener((RegisterEvent event) -> {
             if (event.getRegistryKey() == Registries.SOUND_EVENT) {
                 registerSounds(BuiltInRegistries.SOUND_EVENT);
